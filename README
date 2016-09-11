@@ -1,0 +1,44 @@
+Viziru Luciana - 332CA
+
+Readme - Tema 3 Linux - SO
+
+In implementare am folosit o lista inlantuita pentru memorarea zonelor de
+memorie virtuala alocate. Aceasta este definita in modulul linkedlist, ca
+lista generica - void*.
+
+Am folosit structurile din helpers.h, la care am adaugat o structura ce mentine
+informatia despre o zona de memorie virtuala alocata si informatii de inden-
+tificare a zonei si a paginii corespunzatiare de swap in structura de
+page_table_entry.
+
+In vmsim_init, se inlocuieste handlerul de semnal cu vmsim_handler, in care se
+trateaza doar semnalele de tipul SIGSEGV. De asemenea, se initializeaza lista
+de zone de memorie, ca o lista vida. Vmsim_cleanup va executa operatiile inverse,
+restituind handlerul de semnal si eliberand lista creata.
+
+La alocarea unei noi zone virtuale, se creeaza, se deschid si se trunchiaza
+fisierele de ram si swap cu numele "ramx" si "swapx" pentru zona cu numarul x.
+Acestea vor fi sterse la apelul vmsim_free pentru respectiva zona. Pentru fie-
+care zona se retin in structura dedicata un array de pagini - page_table - si
+un array de frame-uri - frames - alaturi de handle-urile de fisiere si id-ul
+zonei. Se mapeaza in memoria procesului intreg spatiul de memorie virtuala a
+zonei si se retine, pentru fiecare pagina, adresa de start, pentru a fi tratate
+individual.
+
+Functii auxiliare adaugate sunt:
+- get_page_for_address - intoarce adresa de inceput a paginii ce contine o
+adresa data sau NULL daca nu exista
+- get_free_frame - intoarce adresa primului frame liber din ram, NULL daca nu
+exista
+- swap_out - evacueaza un frame la intamplare din ram, ducand pagina in swap si
+intoarce adresa acestuia
+- change_to_prot_write - adauga permisiuni de R si W unei pagini date
+
+In ceea ce priveste logica interna, la un page fault se verifica motivul si se
+actioneaza in functie de acesta. Atat curatarea frame-ului la demand paging,
+cat si operatia de swap in sunt executate in handler. La swap out, se copiaza
+continutul frame-ului intr-un buffer, cu ajutorul caruia se scrie in pagina
+corespunzatoare in fisierul de swap (dat de pte->index) si se remapeaza pagina
+in memoria virtuala, fara drepturi de acces. La swap in, se copiaza informatia
+din fisierul de swap intr-un buffer si se scrie in frame-ul liber din ram, apoi
+se mapeaza zona de memorie a paginii in frame-ul de ram.
