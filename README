@@ -1,44 +1,32 @@
-Viziru Luciana - 332CA
+Viziru Luciana
+Virtual Memory Mechanism
 
-Readme - Tema 3 Linux - SO
+A linkedlist was used for keeping track of the allocated virtual memory zones.
 
-In implementare am folosit o lista inlantuita pentru memorarea zonelor de
-memorie virtuala alocate. Aceasta este definita in modulul linkedlist, ca
-lista generica - void*.
+The used structs are defined in the helper.h file.
 
-Am folosit structurile din helpers.h, la care am adaugat o structura ce mentine
-informatia despre o zona de memorie virtuala alocata si informatii de inden-
-tificare a zonei si a paginii corespunzatiare de swap in structura de
-page_table_entry.
+In the vmsim_init() function, the signal handler is replaced with vmsim_handler
+which will only take action for the SIGSEGV signals. Also, the linkedlist
+container is initialized. vmsim_cleanup() will perform the opposite actions,
+reseting the signal handler and freeing the allocated memory.
 
-In vmsim_init, se inlocuieste handlerul de semnal cu vmsim_handler, in care se
-trateaza doar semnalele de tipul SIGSEGV. De asemenea, se initializeaza lista
-de zone de memorie, ca o lista vida. Vmsim_cleanup va executa operatiile inverse,
-restituind handlerul de semnal si eliberand lista creata.
+When a new virtual memory chunk is allocated, the ram and swap files are
+created, opened and trunked - "ramx" and "swapx" for the zone number x.
+These files will be deleted at the vmsim_free() call for the given memory zone.
+For each memory chunk, an array of pages (page_table) and an array of frames
+(frames) are held in the dedicated struct, along with the file handles and the
+memory zone id. The full virtual memory zone is mapped in the process memory and
+the beginning address is held for each page, in order to be handled individually.
 
-La alocarea unei noi zone virtuale, se creeaza, se deschid si se trunchiaza
-fisierele de ram si swap cu numele "ramx" si "swapx" pentru zona cu numarul x.
-Acestea vor fi sterse la apelul vmsim_free pentru respectiva zona. Pentru fie-
-care zona se retin in structura dedicata un array de pagini - page_table - si
-un array de frame-uri - frames - alaturi de handle-urile de fisiere si id-ul
-zonei. Se mapeaza in memoria procesului intreg spatiul de memorie virtuala a
-zonei si se retine, pentru fiecare pagina, adresa de start, pentru a fi tratate
-individual.
-
+Some auxiliary functions:
 Functii auxiliare adaugate sunt:
-- get_page_for_address - intoarce adresa de inceput a paginii ce contine o
-adresa data sau NULL daca nu exista
-- get_free_frame - intoarce adresa primului frame liber din ram, NULL daca nu
-exista
-- swap_out - evacueaza un frame la intamplare din ram, ducand pagina in swap si
-intoarce adresa acestuia
-- change_to_prot_write - adauga permisiuni de R si W unei pagini date
+- get_page_for_address - the beginning address of the page containing the given
+address or NULL if it doesn't exist
+- get_free_frame - the address of the first free frame in RAM or NULL fi it
+doesn't exist
+- swap_out - it swaps out a randomly chosen fram from RAM, by taking the page
+to swap and returns the frame address
+- change_to_prot_write - it adds R and W permisiions to a given page
 
-In ceea ce priveste logica interna, la un page fault se verifica motivul si se
-actioneaza in functie de acesta. Atat curatarea frame-ului la demand paging,
-cat si operatia de swap in sunt executate in handler. La swap out, se copiaza
-continutul frame-ului intr-un buffer, cu ajutorul caruia se scrie in pagina
-corespunzatoare in fisierul de swap (dat de pte->index) si se remapeaza pagina
-in memoria virtuala, fara drepturi de acces. La swap in, se copiaza informatia
-din fisierul de swap intr-un buffer si se scrie in frame-ul liber din ram, apoi
-se mapeaza zona de memorie a paginii in frame-ul de ram.
+Regarding the internal logic, when receiving a page fault, the cause dictates
+the following operations.
